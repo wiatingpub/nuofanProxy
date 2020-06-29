@@ -3,8 +3,8 @@ package com.nuofankj.socket.server;
 import com.nuofankj.socket.handler.HeartBeatHandler;
 import com.nuofankj.socket.handler.MessageDecoder;
 import com.nuofankj.socket.handler.MessageEncoder;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
@@ -19,7 +19,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,12 +34,13 @@ public class SocketServer implements SmartInitializingSingleton {
     private ApplicationEventPublisher applicationEventPublisher;
 
     private NetServerOptions serverOptions;
-    private ServerBootstrap serverBootstrap;
-    private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private Channel channel;
-    @Value("${socket.listenPort}")
+    private Bootstrap bootstrap;
+    @Value("${remote.port}")
     private int port;
+    @Value("${remote.host}")
+    private String host;
 
     @Override
     public void afterSingletonsInstantiated() {
@@ -51,33 +51,16 @@ public class SocketServer implements SmartInitializingSingleton {
     private void start() {
         Class<? extends ServerChannel> serverChannel;
         if (isLinux()) {
-            this.bossGroup = new EpollEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerAcceptorIoThread"));
             this.workerGroup = new EpollEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerWorkerIoThread"));
             serverChannel = EpollServerSocketChannel.class;
         } else {
-            this.bossGroup = new NioEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerAcceptorIoThread"));
             this.workerGroup = new NioEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerWorkerIoThread"));
             serverChannel = NioServerSocketChannel.class;
         }
 
-        serverBootstrap = new ServerBootstrap();
-        serverBootstrap.group(this.bossGroup, this.workerGroup);
-        serverBootstrap.channel(serverChannel);
-        serverBootstrap.option(ChannelOption.SO_BACKLOG, serverOptions.getBackLog());
-        serverBootstrap.option(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(serverOptions.getWaterMarkLow(), serverOptions.getWaterMarkHigh()));
-        serverBootstrap.childOption(ChannelOption.SO_KEEPALIVE, serverOptions.isKeepALive());
-        // 某个服务器进程占用了TCP的80端口进行监听，此时再次监听该端口就会返回错误，使用该参数就可以解决问题，该参数允许共用该端口，这个在服务器程序中比较常使
-        serverBootstrap.childOption(ChannelOption.SO_REUSEADDR, true);
-        // Socket参数，关闭Socket的延迟时间，默认值为-1，表示禁用该功能。-1表示socket.close()方法立即返回，但OS底层会将发送缓冲区全部发送到对端。0表示socket.close()方法立即返回，OS放弃发送缓冲区的数据直接向对端发送RST包，对端收到复位错误。非0整数值表示调用socket.close()方法的线程被阻塞直到延迟时间到或发送缓冲区中的数据发送完毕，若超时，则对端会收到复位错误。
-        serverBootstrap.childOption(ChannelOption.SO_LINGER, 0);
-        // Netty参数，用于Channel分配接受Buffer的分配器，默认值为AdaptiveRecvByteBufAllocator.DEFAULT，是一个自适应的接受缓冲区分配器，能根据接受到的数据自动调节大小。可选值为FixedRecvByteBufAllocator，固定大小的接受缓冲区分配器。
-        serverBootstrap.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
-        serverBootstrap.childOption(ChannelOption.TCP_NODELAY, serverOptions.isTcpNoDelay());
-        serverBootstrap.childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, serverOptions.getConnectTimeout());
-        serverBootstrap.childOption(ChannelOption.SO_RCVBUF, serverOptions.getReceiveBufferSize());
-        serverBootstrap.childOption(ChannelOption.SO_SNDBUF, serverOptions.getSendBufferSize());
-        serverBootstrap.childHandler(createNetServerChannelInitializer());
-
+        bootstrap.group(workerGroup).channel(serverChannel)
+                .option(ChannelOption.SO_KEEPALIVE, true)
+        .handler(createNetServerChannelInitializer());
         listen();
     }
 
@@ -95,26 +78,21 @@ public class SocketServer implements SmartInitializingSingleton {
     }
 
     private void listen() {
-        InetSocketAddress inetSocketAddress = new InetSocketAddress(port);
         try {
-            ChannelFuture channelFuture = serverBootstrap.bind(inetSocketAddress).sync();
+            ChannelFuture channelFuture = bootstrap.connect(host, port).sync();
             if (channelFuture.isSuccess()) {
                 this.channel = channelFuture.channel();
                 log.info("诺凡代理器开启成功，服务器地址[{}]", port);
             }
-        } catch (Throwable e) {
+        } catch (InterruptedException e) {
+            e.printStackTrace();
             shutdown();
-            throw new RuntimeException(e.getMessage(), e);
         }
     }
 
     private void shutdown() {
         if (channel != null && channel.isOpen()) {
             channel.close();
-        }
-
-        if (bossGroup != null) {
-            bossGroup.shutdownGracefully();
         }
 
         if (workerGroup != null) {
