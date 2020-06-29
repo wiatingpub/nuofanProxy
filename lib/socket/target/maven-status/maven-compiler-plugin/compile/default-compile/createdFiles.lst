@@ -10,8 +10,6 @@ com\nuofankj\socket\dispatcher\ApiInjectProcessor.class
 com\nuofankj\socket\handler\MessageHandler.class
 com\nuofankj\socket\manager\ChannelSession.class
 com\nuofankj\socket\handler\AuthHandler.class
-com\nuofankj\socket\proto\ChatProto.class
-com\nuofankj\socket\server\WebSocketServer$1$1.class
 com\nuofankj\socket\server\NetServerOptions$Builder.class
 com\nuofankj\socket\server\WebSocketServer.class
 com\nuofankj\socket\dispatcher\bean\MessageBean.class

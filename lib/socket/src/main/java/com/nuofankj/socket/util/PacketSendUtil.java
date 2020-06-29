@@ -1,7 +1,7 @@
 package com.nuofankj.socket.util;
 
 import com.alibaba.fastjson.JSON;
-import com.nuofankj.socket.manager.ChannelManager;
+import com.nuofankj.socket.manager.SessionManager;
 import com.nuofankj.socket.manager.ChannelSession;
 import com.nuofankj.socket.proto.AbstractMessage;
 import io.netty.channel.Channel;
@@ -27,7 +27,7 @@ public class PacketSendUtil {
     }
 
     public static void broadcastMessage(AbstractMessage message) {
-        for (Map.Entry<Channel, ChannelSession> sessionEntry : ChannelManager.sessionMap.entrySet()) {
+        for (Map.Entry<Channel, ChannelSession> sessionEntry : SessionManager.sessionMap.entrySet()) {
             ChannelSession targetSession = sessionEntry.getValue();
             if (targetSession.isAuth()) {
                 sendMessage(targetSession, message);

@@ -1,7 +1,8 @@
 package com.nuofankj.socket.server;
 
-import com.nuofankj.socket.handler.AuthHandler;
-import com.nuofankj.socket.handler.MessageHandler;
+import com.nuofankj.socket.handler.HeartBeatHandler;
+import com.nuofankj.socket.handler.MessageDecoder;
+import com.nuofankj.socket.handler.MessageEncoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -9,13 +10,9 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.internal.logging.InternalLogger;
-import io.netty.util.internal.logging.InternalLoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,25 +20,26 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author xifanxiaxue
  * @date 2/8/20
- * @desc WebSocket入口
+ * @desc
  */
+@Slf4j
 @Component
-public class WebSocketServer implements SmartInitializingSingleton {
+public class SocketServer implements SmartInitializingSingleton {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    private final InternalLogger log = InternalLoggerFactory.getInstance(WebSocketServer.class);
     private NetServerOptions serverOptions;
     private ServerBootstrap serverBootstrap;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private Channel channel;
-    @Value("${websocket.listenPort}")
+    @Value("${socket.listenPort}")
     private int port;
 
     @Override
@@ -88,15 +86,10 @@ public class WebSocketServer implements SmartInitializingSingleton {
         return new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel ch) {
-                ChannelPipeline pipeline = ch.pipeline();
-                pipeline.addLast(new HttpServerCodec());
-                pipeline.addLast(new HttpObjectAggregator(64 * 1024));
-                // 设计思路是，服务器在一定时间内发现连接读空闲，则再移除对应的channel，当然了客户端也要定时推送pong数据过来
-                pipeline.addLast(new IdleStateHandler(60, 0, 0));
-                pipeline.addLast(new AuthHandler(applicationEventPublisher));
-                // WebSocketServerProtocolHandler 处理了所有委托管理的 WebSocket 帧类型以 及升级握手本身。如果握手成功，那么所需的ChannelHandler将会被添加到ChannelPipeline 中，而那些不再需要的ChannelHandler则将会被移除
-                pipeline.addLast(new WebSocketServerProtocolHandler(webSocketPath));
-                pipeline.addLast(new MessageHandler(applicationEventPublisher));
+                ch.pipeline().addLast(new MessageDecoder());
+                ch.pipeline().addLast(new MessageEncoder());
+                ch.pipeline().addLast(new IdleStateHandler(60, 30, 0, TimeUnit.SECONDS));
+                ch.pipeline().addLast(new HeartBeatHandler());
             }
         };
     }
@@ -107,7 +100,7 @@ public class WebSocketServer implements SmartInitializingSingleton {
             ChannelFuture channelFuture = serverBootstrap.bind(inetSocketAddress).sync();
             if (channelFuture.isSuccess()) {
                 this.channel = channelFuture.channel();
-                log.info("服务器地址[{}]开启成功！！！", channel);
+                log.info("诺凡代理器开启成功，服务器地址[{}]", port);
             }
         } catch (Throwable e) {
             shutdown();

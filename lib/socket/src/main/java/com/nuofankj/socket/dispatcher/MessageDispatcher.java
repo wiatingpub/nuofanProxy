@@ -1,10 +1,9 @@
 package com.nuofankj.socket.dispatcher;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.nuofankj.socket.dispatcher.bean.MessageBean;
 import com.nuofankj.socket.manager.ChannelSession;
 import com.nuofankj.socket.proto.AbstractMessage;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationTargetException;
@@ -15,9 +14,10 @@ import java.util.Map;
 /**
  * @author xifanxiaxue
  * @date 2020/6/2 8:13
- * @desc 协议分发
+ * @desc 协议组件，作用是分发和解析协议
  */
 @Slf4j
+@Getter
 public class MessageDispatcher {
 
     /**
@@ -25,23 +25,22 @@ public class MessageDispatcher {
      */
     public static Map<Integer, MessageBean> id2MessageBeanMap = new HashMap<>();
 
-    public static void dispatch(String message, ChannelSession channelSession) {
-        JSONObject json = JSONObject.parseObject(message);
-        int code = json.getInteger("code");
-        MessageBean messageBean = MessageDispatcher.id2MessageBeanMap.get(code);
-        if (messageBean == null) {
-            log.error("协议号:{}找不到分发对象", code);
-        } else {
-            AbstractMessage abstractMessage = JSON.parseObject(message, messageBean.getMessage());
-            Method targetMethod = messageBean.getTargetMethod();
-            targetMethod.setAccessible(true);
-            try {
-                targetMethod.invoke(messageBean.getTargetObject(), channelSession, abstractMessage);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InvocationTargetException e) {
-                e.printStackTrace();
-            }
+    /**
+     * 协议分发
+     *
+     * @param abstractMessage
+     * @param channelSession
+     */
+    public static void dispatch(AbstractMessage abstractMessage, ChannelSession channelSession) {
+        MessageBean messageBean = id2MessageBeanMap.get(abstractMessage.getCode());
+        Method targetMethod = messageBean.getTargetMethod();
+        targetMethod.setAccessible(true);
+        try {
+            targetMethod.invoke(messageBean.getTargetObject(), channelSession, abstractMessage);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
         }
     }
 }

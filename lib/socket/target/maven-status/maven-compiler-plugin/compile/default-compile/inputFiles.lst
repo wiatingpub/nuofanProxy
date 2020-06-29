@@ -7,7 +7,6 @@ C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\manager\Chann
 C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\proto\AbstractMessage.java
 C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\util\PacketSendUtil.java
 C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\manager\ChannelSession.java
-C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\proto\ChatProto.java
 C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\server\NetServerOptions.java
 C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\handler\MessageHandler.java
 C:\soft\code\chatRoom\lib\socket\src\main\java\com\nuofankj\socket\dispatcher\anno\Api.java

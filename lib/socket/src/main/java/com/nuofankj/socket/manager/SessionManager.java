@@ -2,7 +2,6 @@ package com.nuofankj.socket.manager;
 
 import com.nuofankj.socket.util.NettyUtil;
 import io.netty.channel.Channel;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,10 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author xifanxiaxue
  * @date 2020/5/31 9:52
- * @desc 连接管理
+ * @desc Session管理器
  */
 @Slf4j
-public class ChannelManager {
+public class SessionManager {
 
     /**
      * 存放所有Channel相关的引用
@@ -62,7 +61,7 @@ public class ChannelManager {
      * @return
      */
     public static boolean activeSession(Channel channel, String nickName) {
-        ChannelSession channelSession = ChannelManager.getChannelSession(channel);
+        ChannelSession channelSession = getChannelSession(channel);
         if (channelSession == null) {
             return false;
         }
@@ -84,6 +83,6 @@ public class ChannelManager {
      * @return
      */
     public static int getActiveUserCount() {
-        return ChannelManager.sessionCount.get();
+        return sessionCount.get();
     }
 }

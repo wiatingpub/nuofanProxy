@@ -5,7 +5,7 @@ package com.nuofankj.socket.proto;
  * @date 2020/5/31 16:04
  * @desc 协议基类
  */
-public abstract class AbstractMessage {
+public abstract class AbstractMessage implements IMessage {
     /**
      * 协议id
      */
