@@ -88,7 +88,7 @@ public class SocketServer implements SmartInitializingSingleton {
             protected void initChannel(Channel ch) {
                 ch.pipeline().addLast(new MessageDecoder());
                 ch.pipeline().addLast(new MessageEncoder());
-                ch.pipeline().addLast(new IdleStateHandler(60, 30, 0, TimeUnit.SECONDS));
+                ch.pipeline().addLast(new IdleStateHandler(6, 0, 0, TimeUnit.SECONDS));
                 ch.pipeline().addLast(new HeartBeatHandler());
             }
         };

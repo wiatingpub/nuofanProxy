@@ -1,13 +1,7 @@
 package com.nuofankj.socket.util;
 
-import com.alibaba.fastjson.JSON;
-import com.nuofankj.socket.manager.SessionManager;
-import com.nuofankj.socket.manager.ChannelSession;
 import com.nuofankj.socket.proto.AbstractMessage;
-import io.netty.channel.Channel;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-
-import java.util.Map;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * @author xifanxiaxue
@@ -17,21 +11,12 @@ import java.util.Map;
 public class PacketSendUtil {
 
     /**
-     * 给session推送协议
+     * 给主服推送协议
      *
-     * @param session
+     * @param ctx
      * @param message
      */
-    public static void sendMessage(ChannelSession session, AbstractMessage message) {
-        session.getChannel().writeAndFlush(new TextWebSocketFrame(JSON.toJSONString(message)));
-    }
-
-    public static void broadcastMessage(AbstractMessage message) {
-        for (Map.Entry<Channel, ChannelSession> sessionEntry : SessionManager.sessionMap.entrySet()) {
-            ChannelSession targetSession = sessionEntry.getValue();
-            if (targetSession.isAuth()) {
-                sendMessage(targetSession, message);
-            }
-        }
+    public static void sendMessage(ChannelHandlerContext ctx, AbstractMessage message) {
+        ctx.writeAndFlush(message);
     }
 }

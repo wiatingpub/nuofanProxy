@@ -36,7 +36,7 @@ public class SocketServer implements SmartInitializingSingleton {
     private NetServerOptions serverOptions;
     private EventLoopGroup workerGroup;
     private Channel channel;
-    private Bootstrap bootstrap;
+    private Bootstrap bootstrap = new Bootstrap();
     @Value("${remote.port}")
     private int port;
     @Value("${remote.host}")
@@ -57,7 +57,6 @@ public class SocketServer implements SmartInitializingSingleton {
             this.workerGroup = new NioEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerWorkerIoThread"));
             serverChannel = NioServerSocketChannel.class;
         }
-
         bootstrap.group(workerGroup).channel(serverChannel)
                 .option(ChannelOption.SO_KEEPALIVE, true)
         .handler(createNetServerChannelInitializer());
@@ -71,7 +70,7 @@ public class SocketServer implements SmartInitializingSingleton {
             protected void initChannel(Channel ch) {
                 ch.pipeline().addLast(new MessageDecoder());
                 ch.pipeline().addLast(new MessageEncoder());
-                ch.pipeline().addLast(new IdleStateHandler(60, 30, 0, TimeUnit.SECONDS));
+                ch.pipeline().addLast(new IdleStateHandler(0, 5, 0, TimeUnit.SECONDS));
                 ch.pipeline().addLast(new HeartBeatHandler());
             }
         };
