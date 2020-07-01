@@ -32,8 +32,11 @@ public class NettyUtil {
         in.readBytes(contentBytes);
         // 根据协议id读取对应协议
         MessageBean messageBean = MessageDispatcher.id2MessageBeanMap.get(messageId);
-        AbstractMessage message = JSON.parseObject(contentBytes, messageBean.getMessage());
-        return message;
+        if (messageBean == null) {
+            return null;
+        }
+        
+        return JSON.parseObject(contentBytes, messageBean.getMessage());
     }
 
     /**

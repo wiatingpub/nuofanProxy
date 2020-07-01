@@ -10,6 +10,7 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -52,12 +53,10 @@ public class SocketServer implements SmartInitializingSingleton {
         Class<? extends ServerChannel> serverChannel;
         if (isLinux()) {
             this.workerGroup = new EpollEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerWorkerIoThread"));
-            serverChannel = EpollServerSocketChannel.class;
         } else {
             this.workerGroup = new NioEventLoopGroup(serverOptions.getAcceptorThreads(), new DefaultThreadFactory("NetServerWorkerIoThread"));
-            serverChannel = NioServerSocketChannel.class;
         }
-        bootstrap.group(workerGroup).channel(serverChannel)
+        bootstrap.group(workerGroup).channel(NioSocketChannel.class)
                 .option(ChannelOption.SO_KEEPALIVE, true)
         .handler(createNetServerChannelInitializer());
         listen();

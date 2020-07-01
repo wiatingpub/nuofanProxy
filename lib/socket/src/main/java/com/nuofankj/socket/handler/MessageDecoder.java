@@ -23,6 +23,10 @@ public class MessageDecoder extends ReplayingDecoder<AbstractMessage> {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         AbstractMessage abstractMessage = NettyUtil.decodeMessage(in);
+        if (abstractMessage == null) {
+            return;
+        }
+        
         ChannelSession channelSession = SessionManager.getChannelSession(ctx.channel());
         MessageDispatcher.dispatch(abstractMessage, channelSession);
     }
