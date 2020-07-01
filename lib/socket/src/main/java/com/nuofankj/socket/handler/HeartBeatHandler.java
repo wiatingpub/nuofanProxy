@@ -1,5 +1,6 @@
 package com.nuofankj.socket.handler;
 
+import com.nuofankj.socket.manager.SessionManager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
@@ -28,7 +29,7 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-
+        SessionManager.addChannel(ctx.channel());
     }
 
     @Override
